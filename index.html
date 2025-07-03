@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Theo dõi Ứng tuyển</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Changed background to a subtle gradient for more vibrancy */
+            background: linear-gradient(to bottom right, #e0f2fe, #eef2ff); /* Light blue to very light indigo */
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1.5rem; /* Slightly more padding */
+            background-color: #fff;
+            border-radius: 1.25rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Stronger shadow for depth */
+        }
+        input[type="text"], input[type="date"], select, textarea {
+            border: 1px solid #d1d5db;
+            border-radius: 0.625rem; /* Slightly more rounded */
+            padding: 0.75rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #f9fafb; /* Slightly off-white background for inputs */
+        }
+        input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25); /* More prominent focus shadow */
+        }
+        button {
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+            border-radius: 0.75rem; /* More rounded buttons */
+            font-weight: 600; /* Slightly bolder text */
+        }
+        button:hover {
+            transform: translateY(-2px); /* More noticeable lift on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Add shadow on hover */
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: none; /* Remove shadow on active */
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Darker overlay */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2.5rem; /* More padding */
+            border-radius: 1.5rem; /* More rounded */
+            box-shadow: 0 12px 24px rgba(0,0,0,0.25); /* Stronger shadow */
+            max-width: 90%;
+            width: 450px; /* Slightly wider */
+            text-align: center;
+        }
+        .modal-content h3 {
+            margin-bottom: 1.25rem;
+            font-size: 1.75rem; /* Larger title */
+            font-weight: 700; /* Bolder */
+            color: #1f2937;
+        }
+        .modal-content p {
+            margin-bottom: 2rem;
+            color: #4b5563;
+            font-size: 1.1rem; /* Slightly larger text */
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.25rem; /* More space between buttons */
+        }
+        .modal-buttons button {
+            padding: 0.85rem 1.75rem; /* Larger buttons */
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow on modal buttons */
+        }
+        .modal-buttons .confirm-btn {
+            background-color: #ef4444;
+            color: white;
+        }
+        .modal-buttons .confirm-btn:hover {
+            background-color: #dc2626;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .modal-buttons .cancel-btn {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .modal-buttons .cancel-btn:hover {
+            background-color: #d1d5db;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .table-container {
+            overflow-x: auto; /* Enable horizontal scrolling for small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.85rem; /* More padding in table cells */
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap; /* Prevent text wrapping in cells */
+        }
+        th {
+            background-color: #e0e7ff; /* Light indigo background for header */
+            font-weight: 700; /* Bolder header text */
+            color: #3730a3; /* Darker indigo text */
+            text-transform: uppercase;
+            font-size: 0.9rem; /* Slightly larger header font */
+        }
+        /* Alternating row colors for visual vibrancy */
+        tbody tr:nth-child(odd) {
+            background-color: #ffffff; /* White for odd rows */
+        }
+        tbody tr:nth-child(even) {
+            background-color: #fcfdff; /* Very light blue for even rows */
+        }
+        tr:hover {
+            background-color: #f0f4ff; /* Lighter indigo on hover for rows */
+        }
+        .status-badge {
+            padding: 0.35rem 0.85rem; /* Slightly larger badges */
+            border-radius: 9999px; /* Full rounded */
+            font-size: 0.8rem; /* Slightly larger font in badges */
+            font-weight: 700; /* Bolder badge text */
+            display: inline-block;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08); /* Subtle shadow on badges */
+        }
+        /* Existing status badge colors (kept for consistency and clarity) */
+        .status-new { background-color: #bfdbfe; color: #1e40af; } /* Blue */
+        .status-submitted { background-color: #d1fae5; color: #065f46; } /* Green */
+        .status-interview { background-color: #fef3c7; color: #92400e; } /* Yellow */
+        .status-rejected { background-color: #fee2e2; color: #991b1b; } /* Red */
+        .status-offer { background-color: #dbeafe; color: #1c64f2; } /* Light Blue */
+        .status-accepted { background-color: #a7f3d0; color: #047857; } /* Teal */
+        .status-other { background-color: #e0e7ff; color: #4338ca; } /* Indigo */
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 0.75rem;
+            }
+            .grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            button {
+                padding: 0.6rem 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Công cụ Theo dõi Ứng tuyển</h1>
+        <p class="text-center text-sm text-gray-600 mb-4">
+            Người dùng hiện tại (ID): <span id="userIdDisplay" class="font-semibold text-indigo-600">Đang tải...</span>
+        </p>
+
+        <!-- Form để thêm/chỉnh sửa ứng tuyển -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="formTitle">Thêm Ứng tuyển Mới</h2>
+            <form id="jobApplicationForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="jobId">
+                <div>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">Tên công ty</label>
+                    <input type="text" id="companyName" placeholder="Ví dụ: Công ty ABC" required>
+                </div>
+                <div>
+                    <label for="position" class="block text-sm font-medium text-gray-700 mb-1">Vị trí ứng tuyển</label>
+                    <select id="position" required>
+                        <option value="">Chọn vị trí</option>
+                        <option value="Giám đốc Kinh doanh">Giám đốc Kinh doanh</option>
+                        <option value="Giám đốc Marketing">Giám đốc Marketing</option>
+                        <option value="Trưởng phòng Kinh doanh">Trưởng phòng Kinh doanh</option>
+                        <option value="Trưởng phòng Marketing">Trưởng phòng Marketing</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="jdLink" class="block text-sm font-medium text-gray-700 mb-1">Link JD</label>
+                    <input type="text" id="jdLink" placeholder="Ví dụ: https://example.com/jd" class="focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="salary" class="block text-sm font-medium text-gray-700 mb-1">Mức lương (Gross/Net)</label>
+                    <input type="text" id="salary" placeholder="Ví dụ: 45 triệu gross">
+                </div>
+                <div>
+                    <label for="applicationDate" class="block text-sm font-medium text-gray-700 mb-1">Ngày nộp đơn</label>
+                    <input type="date" id="applicationDate" required>
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                    <select id="status" required>
+                        <option value="">Chọn trạng thái</option>
+                        <option value="Đã nộp CV">Đã nộp CV</option>
+                        <option value="Phỏng vấn vòng 1">Phỏng vấn vòng 1</option>
+                        <option value="Phỏng vấn vòng 2">Phỏng vấn vòng 2</option>
+                        <option value="Đề nghị công việc">Đề nghị công việc</option>
+                        <option value="Đã chấp nhận">Đã chấp nhận</option>
+                        <option value="Bị từ chối">Bị từ chối</option>
+                        <option value="Đang xem xét">Đang xem xét</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Ghi chú đánh giá</label>
+                    <textarea id="notes" rows="3" placeholder="Ví dụ: Văn hoá công ty phù hợp, yêu cầu kinh nghiệm ngành cao..."></textarea>
+                </div>
+                <div class="md:col-span-2 flex justify-end gap-4 mt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-md">
+                        <span id="submitButtonText">Thêm</span>
+                    </button>
+                    <button type="button" id="cancelEditBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md hidden">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bảng hiển thị các ứng tuyển -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Danh sách Ứng tuyển</h2>
+            <div class="table-container">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tên công ty</th>
+                            <th>Vị trí</th>
+                            <th>Link JD</th>
+                            <th>Mức lương</th>
+                            <th>Ngày nộp</th>
+                            <th>Trạng thái</th>
+                            <th>Ghi chú</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobApplicationsTableBody" class="divide-y divide-gray-200">
+                        <!-- Dữ liệu sẽ được tải từ Firestore tại đây -->
+                        <tr><td colspan="9" class="text-center py-4 text-gray-500">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="noDataMessage" class="text-center text-gray-500 py-4 hidden">Chưa có ứng tuyển nào. Hãy thêm ứng tuyển đầu tiên của bạn!</p>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modalTitle">Xác nhận</h3>
+            <p id="modalMessage">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+            <div class="modal-buttons">
+                <button id="modalConfirmBtn" class="confirm-btn">Xác nhận</button>
+                <button id="modalCancelBtn" class="cancel-btn">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase
+        let app;
+        let db;
+        let auth;
+        let userId = 'loading'; // Default loading state for userId
+
+        // Get environment variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // UI Elements
+        const jobApplicationForm = document.getElementById('jobApplicationForm');
+        const jobIdInput = document.getElementById('jobId');
+        const companyNameInput = document.getElementById('companyName');
+        const positionInput = document.getElementById('position'); // This is now a select element
+        const jdLinkInput = document.getElementById('jdLink');
+        const salaryInput = document.getElementById('salary');
+        const applicationDateInput = document.getElementById('applicationDate');
+        const statusInput = document.getElementById('status');
+        const notesInput = document.getElementById('notes');
+        const jobApplicationsTableBody = document.getElementById('jobApplicationsTableBody');
+        const formTitle = document.getElementById('formTitle');
+        const submitButtonText = document.getElementById('submitButtonText');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const noDataMessage = document.getElementById('noDataMessage');
+
+        // Modal elements
+        const confirmationModal = document.getElementById('confirmationModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+        let resolveModalPromise; // To store the resolve function for the modal promise
+
+        /**
+         * Shows a custom confirmation modal.
+         * @param {string} title - The title of the modal.
+         * @param {string} message - The message to display.
+         * @returns {Promise<boolean>} - A promise that resolves to true if confirmed, false if cancelled.
+         */
+        function showConfirmationModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            confirmationModal.classList.remove('hidden');
+
+            return new Promise((resolve) => {
+                resolveModalPromise = resolve;
+            });
+        }
+
+        modalConfirmBtn.onclick = () => {
+            confirmationModal.classList.add('hidden');
+            if (resolveModalPromise) resolveModalPromise(true);
+        };
+
+        modalCancelBtn.onclick = () => {
+            confirmationModal.classList.add('hidden');
+            if (resolveModalPromise) resolveModalPromise(false);
+        };
+
+        /**
+         * Initializes Firebase and sets up authentication.
+         */
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Listen for auth state changes
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        console.log("User signed in:", userId);
+                        // Start listening to Firestore data only after auth is ready
+                        setupFirestoreListener();
+                    } else {
+                        // If no user, sign in using custom token or anonymously
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                            console.log("Signed in with custom token.");
+                        } else {
+                            await signInAnonymously(auth);
+                            console.log("Signed in anonymously.");
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                userIdDisplay.textContent = 'Lỗi tải ID';
+                showConfirmationModal('Lỗi', 'Không thể kết nối với dịch vụ lưu trữ. Vui lòng thử lại sau.');
+            }
+        }
+
+        /**
+         * Sets up a real-time listener for job applications from Firestore.
+         */
+        function setupFirestoreListener() {
+            // Path for private user data
+            const collectionPath = `artifacts/${appId}/users/${userId}/jobApplications`;
+            const q = query(collection(db, collectionPath));
+
+            onSnapshot(q, (snapshot) => {
+                const applications = [];
+                snapshot.forEach((doc) => {
+                    applications.push({ id: doc.id, ...doc.data() });
+                });
+                renderJobApplications(applications);
+            }, (error) => {
+                console.error("Error listening to job applications:", error);
+                showConfirmationModal('Lỗi', 'Không thể tải dữ liệu ứng tuyển. Vui lòng kiểm tra kết nối.');
+                jobApplicationsTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-red-500">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+            });
+        }
+
+        /**
+         * Renders the job applications in the table.
+         * @param {Array<Object>} applications - Array of job application objects.
+         */
+        function renderJobApplications(applications) {
+            jobApplicationsTableBody.innerHTML = ''; // Clear existing rows
+            if (applications.length === 0) {
+                noDataMessage.classList.remove('hidden');
+                return;
+            }
+            noDataMessage.classList.add('hidden');
+
+            applications.forEach((app, index) => {
+                const row = jobApplicationsTableBody.insertRow();
+                row.dataset.id = app.id; // Store Firestore document ID
+
+                // Determine status badge class
+                let statusClass = 'status-other';
+                switch (app.status) {
+                    case 'Đã nộp CV': statusClass = 'status-submitted'; break;
+                    case 'Phỏng vấn vòng 1':
+                    case 'Phỏng vấn vòng 2': statusClass = 'status-interview'; break;
+                    case 'Đề nghị công việc': statusClass = 'status-offer'; break;
+                    case 'Đã chấp nhận': statusClass = 'status-accepted'; break;
+                    case 'Bị từ chối': statusClass = 'status-rejected'; break;
+                    case 'Đang xem xét': statusClass = 'status-new'; break;
+                    default: statusClass = 'status-other'; break;
+                }
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${app.companyName || ''}</td>
+                    <td>${app.position || ''}</td>
+                    <td>${app.jdLink ? `<a href="${app.jdLink}" target="_blank" class="text-indigo-600 hover:underline">Link</a>` : ''}</td>
+                    <td>${app.salary || ''}</td>
+                    <td>${app.applicationDate || ''}</td>
+                    <td><span class="status-badge ${statusClass}">${app.status || ''}</span></td>
+                    <td>${app.notes || ''}</td>
+                    <td class="flex flex-col sm:flex-row gap-2">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold py-1 px-2 rounded-md edit-btn" data-id="${app.id}">Sửa</button>
+                        <button class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-2 rounded-md delete-btn" data-id="${app.id}">Xóa</button>
+                    </td>
+                `;
+            });
+
+            // Add event listeners for edit and delete buttons
+            jobApplicationsTableBody.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => editJobApplication(e.target.dataset.id));
+            });
+            jobApplicationsTableBody.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => deleteJobApplication(e.target.dataset.id));
+            });
+        }
+
+        /**
+         * Handles form submission for adding or updating a job application.
+         * @param {Event} e - The submit event.
+         */
+        jobApplicationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!db || !userId || userId === 'loading') {
+                showConfirmationModal('Lỗi', 'Hệ thống chưa sẵn sàng. Vui lòng đợi hoặc tải lại trang.');
+                return;
+            }
+
+            const jobData = {
+                companyName: companyNameInput.value.trim(),
+                position: positionInput.value, // Read value from select
+                jdLink: jdLinkInput.value.trim(),
+                salary: salaryInput.value.trim(),
+                applicationDate: applicationDateInput.value,
+                status: statusInput.value,
+                notes: notesInput.value.trim()
+            };
+
+            const id = jobIdInput.value;
+            const collectionRef = collection(db, `artifacts/${appId}/users/${userId}/jobApplications`);
+
+            try {
+                if (id) {
+                    // Update existing job
+                    const confirmed = await showConfirmationModal('Xác nhận cập nhật', 'Bạn có chắc chắn muốn cập nhật ứng tuyển này?');
+                    if (!confirmed) return;
+
+                    const docRef = doc(db, collectionRef.path, id);
+                    await updateDoc(docRef, jobData);
+                    showConfirmationModal('Thành công', 'Cập nhật ứng tuyển thành công!');
+                } else {
+                    // Add new job
+                    const confirmed = await showConfirmationModal('Xác nhận thêm mới', 'Bạn có chắc chắn muốn thêm ứng tuyển này?');
+                    if (!confirmed) return;
+
+                    await addDoc(collectionRef, jobData);
+                    showConfirmationModal('Thành công', 'Thêm ứng tuyển mới thành công!');
+                }
+                resetForm();
+            } catch (error) {
+                console.error("Error saving job application:", error);
+                showConfirmationModal('Lỗi', `Không thể lưu ứng tuyển: ${error.message}`);
+            }
+        });
+
+        /**
+         * Populates the form with data for editing a job application.
+         * @param {string} id - The ID of the job application to edit.
+         */
+        async function editJobApplication(id) {
+            if (!db || !userId || userId === 'loading') {
+                showConfirmationModal('Lỗi', 'Hệ thống chưa sẵn sàng. Vui lòng đợi hoặc tải lại trang.');
+                return;
+            }
+
+            const collectionRef = collection(db, `artifacts/${appId}/users/${userId}/jobApplications`);
+            const docRef = doc(db, collectionRef.path, id);
+
+            try {
+                const snapshot = await getDocs(query(collectionRef)); // Fetch all to find by ID
+                let jobToEdit = null;
+                snapshot.forEach(d => {
+                    if (d.id === id) {
+                        jobToEdit = { id: d.id, ...d.data() };
+                    }
+                });
+
+                if (jobToEdit) {
+                    jobIdInput.value = jobToEdit.id;
+                    companyNameInput.value = jobToEdit.companyName || '';
+                    positionInput.value = jobToEdit.position || ''; // Set value for select
+                    jdLinkInput.value = jobToEdit.jdLink || '';
+                    salaryInput.value = jobToEdit.salary || '';
+                    applicationDateInput.value = jobToEdit.applicationDate || '';
+                    statusInput.value = jobToEdit.status || '';
+                    notesInput.value = jobToEdit.notes || '';
+
+                    formTitle.textContent = 'Chỉnh sửa Ứng tuyển';
+                    submitButtonText.textContent = 'Cập nhật';
+                    cancelEditBtn.classList.remove('hidden');
+                } else {
+                    showConfirmationModal('Lỗi', 'Không tìm thấy ứng tuyển để chỉnh sửa.');
+                }
+            } catch (error) {
+                console.error("Error fetching job for edit:", error);
+                showConfirmationModal('Lỗi', `Không thể tải dữ liệu để chỉnh sửa: ${error.message}`);
+            }
+        }
+
+        /**
+         * Deletes a job application from Firestore.
+         * @param {string} id - The ID of the job application to delete.
+         */
+        async function deleteJobApplication(id) {
+            if (!db || !userId || userId === 'loading') {
+                showConfirmationModal('Lỗi', 'Hệ thống chưa sẵn sàng. Vui lòng đợi hoặc tải lại trang.');
+                return;
+            }
+
+            const confirmed = await showConfirmationModal('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa ứng tuyển này? Hành động này không thể hoàn tác.');
+            if (!confirmed) return;
+
+            const collectionRef = collection(db, `artifacts/${appId}/users/${userId}/jobApplications`);
+            const docRef = doc(db, collectionRef.path, id);
+
+            try {
+                await deleteDoc(docRef);
+                showConfirmationModal('Thành công', 'Xóa ứng tuyển thành công!');
+            } catch (error) {
+                console.error("Error deleting job application:", error);
+                showConfirmationModal('Lỗi', `Không thể xóa ứng tuyển: ${error.message}`);
+            }
+        }
+
+        /**
+         * Resets the form to its initial state.
+         */
+        function resetForm() {
+            jobApplicationForm.reset();
+            jobIdInput.value = '';
+            formTitle.textContent = 'Thêm Ứng tuyển Mới';
+            submitButtonText.textContent = 'Thêm';
+            cancelEditBtn.classList.add('hidden');
+        }
+
+        // Event listener for cancel edit button
+        cancelEditBtn.addEventListener('click', resetForm);
+
+        // Initialize Firebase when the window loads
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
